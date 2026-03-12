@@ -1,3 +1,5 @@
+use std::f32::consts::E;
+
 use eframe::{
     App, Frame,
     egui::{self, Align2, Color32, FontId, Pos2, Sense},
@@ -7,6 +9,7 @@ pub struct TspMstApp {
     nodes: Vec<Pos2>,
     hovered_node: Option<usize>,
     drawing_edge_from: Option<usize>,
+    dragged_node: Option<usize>,
     edges: Vec<(usize, usize)>,
 }
 
@@ -24,6 +27,7 @@ impl TspMstApp {
             nodes: Vec::new(),
             hovered_node: None,
             drawing_edge_from: None,
+            dragged_node: None,
             edges: Vec::new(),
         }
     }
@@ -106,6 +110,22 @@ impl TspMstApp {
                 self.drawing_edge_from = None;
             }
             
+        }
+
+        if response.drag_started() && let Some(hovered_node) = self.hovered_node {
+            self.dragged_node = Some(hovered_node);
+        }
+
+        if response.drag_stopped() {
+            self.dragged_node = None;
+        }
+
+        if response.dragged() {
+            if let Some(dragged_node) = self.dragged_node {
+                if let Some(mouse_pos) = response.hover_pos() {
+                    self.nodes[dragged_node] = mouse_pos;
+                }
+            }
         }
     }
 }
