@@ -1,10 +1,13 @@
 use eframe::{
     App, Frame,
-    egui::{self, Color32, Pos2},
+    egui::{self, Align2, Color32, FontId, Pos2, Sense},
 };
 
 pub struct TspMstApp {
     nodes: Vec<Pos2>,
+    hovered_node: Option<usize>,
+    drawing_edge_from: Option<usize>,
+    edges: Vec<(usize, usize)>,
 }
 
 impl App for TspMstApp {
@@ -17,7 +20,12 @@ impl App for TspMstApp {
 
 impl TspMstApp {
     pub fn new() -> Self {
-        Self { nodes: Vec::new() }
+        Self {
+            nodes: Vec::new(),
+            hovered_node: None,
+            drawing_edge_from: None,
+            edges: Vec::new(),
+        }
     }
 
     fn ui_content(&mut self, ui: &mut egui::Ui) {
@@ -26,12 +34,67 @@ impl TspMstApp {
             egui::Sense::click_and_drag(),
         );
 
-        if let Some(mouse_pos) = response.interact_pointer_pos() && response.clicked() {
-            self.nodes.push(mouse_pos);
+        self.process_mouse_input(&response);
+
+        
+
+        self.edges.iter().for_each(|&(from, to)| {
+            let from_pos = self.nodes[from];
+            let to_pos = self.nodes[to];
+            painter.line_segment(
+                [from_pos, to_pos],
+                (2.0, Color32::GREEN),
+            );
+        });
+
+        if let Some(drawing_from) = self.drawing_edge_from {
+            let from_pos = self.nodes[drawing_from];
+            if let Some(mouse_pos) = response.hover_pos() {
+                painter.line_segment(
+                    [from_pos, mouse_pos],
+                    (2.0, Color32::LIGHT_GREEN),
+                );
+            }
         }
 
-        self.nodes.iter().for_each(|&pos| {
-            painter.circle_filled(pos, 5.0, Color32::from_rgb(200, 100, 100));
+        self.nodes.iter().enumerate().for_each(|(i, &pos)| {
+            painter.circle_filled(pos, 12.0, Color32::GRAY);
+            painter.text(
+                pos,
+                Align2::CENTER_CENTER,
+                i.to_string(),
+                FontId::monospace(12.0),
+                Color32::WHITE,
+            );
         });
+    }
+
+    fn process_mouse_input(&mut self, response: &egui::Response) {
+        if let Some(hover_pos) = response.hover_pos() {
+            self.hovered_node = self
+                .nodes
+                .iter()
+                .position(|&pos| (pos - hover_pos).length() < 10.0);
+        }
+
+        if let Some(click_pos) = response.interact_pointer_pos()
+            && response.clicked()
+        {
+            self.nodes.push(click_pos);
+        }
+
+        if response.clicked_by(egui::PointerButton::Secondary) {
+            if let Some(hovered_node) = self.hovered_node {
+                if self.drawing_edge_from.is_none() {
+                self.drawing_edge_from = Some(hovered_node);
+            } else {
+                self.edges.push((self.drawing_edge_from.unwrap(), hovered_node));
+                self.drawing_edge_from = None;
+            }
+            } else {
+                self.drawing_edge_from = None;
+            }
+            
+        }
     }
 }
