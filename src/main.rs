@@ -9,6 +9,6 @@ fn main() {
     let _ = eframe::run_native(
         "TSP MST",
         native_options,
-        Box::new(|_cc| Ok(Box::new(TspMstApp))),
+        Box::new(|_cc| Ok(Box::new(TspMstApp::new()))),
     );
 }
