@@ -74,13 +74,24 @@ impl TspMstApp {
             self.hovered_node = self
                 .nodes
                 .iter()
-                .position(|&pos| (pos - hover_pos).length() < 10.0);
+                .position(|&pos| (pos - hover_pos).length() < 20.0);
         }
 
         if let Some(click_pos) = response.interact_pointer_pos()
             && response.clicked()
         {
-            self.nodes.push(click_pos);
+            let target_node: usize;
+            if self.hovered_node.is_none() {
+                self.nodes.push(click_pos);
+                target_node = self.nodes.len() - 1;
+            } else {
+                target_node = self.hovered_node.unwrap();
+            }
+
+            if let Some(drawing_from) = self.drawing_edge_from {
+                self.edges.push((drawing_from, target_node));
+                self.drawing_edge_from = None;
+            }
         }
 
         if response.clicked_by(egui::PointerButton::Secondary) {
