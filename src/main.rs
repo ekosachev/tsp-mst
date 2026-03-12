@@ -1,6 +1,8 @@
 use eframe;
 
 mod app;
+mod data_structures;
+mod prim;
 
 use app::TspMstApp;
 
