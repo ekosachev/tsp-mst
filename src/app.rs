@@ -3,10 +3,14 @@ use eframe::{
     egui::{self, Align2, Color32, FontId, Pos2},
 };
 
+use crate::prim;
+
 pub struct TspMstApp {
     nodes: Vec<Pos2>,
     hovered_node: Option<usize>,
     dragged_node: Option<usize>,
+    is_dirty: bool,
+    mst_adjacency_list: Vec<Vec<Pos2>>,
 }
 
 impl App for TspMstApp {
@@ -23,6 +27,8 @@ impl TspMstApp {
             nodes: Vec::new(),
             hovered_node: None,
             dragged_node: None,
+            is_dirty: false,
+            mst_adjacency_list: Vec::new(),
         }
     }
 
@@ -36,10 +42,17 @@ impl TspMstApp {
 
         for i in 0..self.nodes.len() {
             for j in (i + 1)..self.nodes.len() {
-                painter.line_segment(
-                    [self.nodes[i], self.nodes[j]],
-                    (2.0, Color32::DARK_GRAY),
-                );
+                painter.line_segment([self.nodes[i], self.nodes[j]], (2.0, Color32::DARK_GRAY));
+            }
+        }
+
+        if self.is_dirty {
+            self.is_dirty = false;
+            self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
+        }
+        for (i, neighbors) in self.mst_adjacency_list.iter().enumerate() {
+            for &neighbor in neighbors {
+                painter.line_segment([self.nodes[i], neighbor], (4.0, Color32::RED));
             }
         }
 
@@ -68,6 +81,7 @@ impl TspMstApp {
         {
             if self.hovered_node.is_none() {
                 self.nodes.push(click_pos);
+                self.is_dirty = true;
             }
         }
 
@@ -85,6 +99,7 @@ impl TspMstApp {
             if let Some(dragged_node) = self.dragged_node {
                 if let Some(mouse_pos) = response.hover_pos() {
                     self.nodes[dragged_node] = mouse_pos;
+                    self.is_dirty = true;
                 }
             }
         }
@@ -95,6 +110,7 @@ impl TspMstApp {
 
                 self.hovered_node = None;
                 self.dragged_node = None;
+                self.is_dirty = true;
             }
         }
     }
