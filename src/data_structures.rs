@@ -28,7 +28,7 @@ impl<T: PartialOrd> MyPriorityQueue<T> {
         Some(result)
     }
 
-    fn bubble_up(&mut self, mut idx: usize) {
+    pub fn bubble_up(&mut self, mut idx: usize) {
         while idx > 0 {
             let parent = (idx - 1) / 2;
             if self.data[idx] <= self.data[parent] { break; }
@@ -54,5 +54,13 @@ impl<T: PartialOrd> MyPriorityQueue<T> {
             self.data.swap(index, largest);
             index = largest;
         }
+    }
+
+    pub fn find(&self, item: &T) -> Option<usize> {
+        self.data.iter().position(|x| x == item)
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        self.data.get_mut(index)
     }
 }
