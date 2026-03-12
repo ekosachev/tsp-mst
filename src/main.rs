@@ -1,20 +1,14 @@
-use eframe::{App, Frame, egui};
+use eframe;
 
-struct HelloApp;
+mod app;
 
-impl App for HelloApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Hello world");
-        });
-    }
-}
+use app::TspMstApp;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
     let _ = eframe::run_native(
-        "Hello world",
+        "TSP MST",
         native_options,
-        Box::new(|_cc| Ok(Box::new(HelloApp))),
+        Box::new(|_cc| Ok(Box::new(TspMstApp))),
     );
 }
