@@ -40,24 +40,16 @@ impl TspMstApp {
 
         self.process_mouse_input(&response);
 
-        
-
         self.edges.iter().for_each(|&(from, to)| {
             let from_pos = self.nodes[from];
             let to_pos = self.nodes[to];
-            painter.line_segment(
-                [from_pos, to_pos],
-                (2.0, Color32::GREEN),
-            );
+            painter.line_segment([from_pos, to_pos], (2.0, Color32::GREEN));
         });
 
         if let Some(drawing_from) = self.drawing_edge_from {
             let from_pos = self.nodes[drawing_from];
             if let Some(mouse_pos) = response.hover_pos() {
-                painter.line_segment(
-                    [from_pos, mouse_pos],
-                    (2.0, Color32::LIGHT_GREEN),
-                );
+                painter.line_segment([from_pos, mouse_pos], (2.0, Color32::LIGHT_GREEN));
             }
         }
 
@@ -101,18 +93,20 @@ impl TspMstApp {
         if response.clicked_by(egui::PointerButton::Secondary) {
             if let Some(hovered_node) = self.hovered_node {
                 if self.drawing_edge_from.is_none() {
-                self.drawing_edge_from = Some(hovered_node);
+                    self.drawing_edge_from = Some(hovered_node);
+                } else {
+                    self.edges
+                        .push((self.drawing_edge_from.unwrap(), hovered_node));
+                    self.drawing_edge_from = None;
+                }
             } else {
-                self.edges.push((self.drawing_edge_from.unwrap(), hovered_node));
                 self.drawing_edge_from = None;
             }
-            } else {
-                self.drawing_edge_from = None;
-            }
-            
         }
 
-        if response.drag_started() && let Some(hovered_node) = self.hovered_node {
+        if response.drag_started()
+            && let Some(hovered_node) = self.hovered_node
+        {
             self.dragged_node = Some(hovered_node);
         }
 
@@ -125,6 +119,26 @@ impl TspMstApp {
                 if let Some(mouse_pos) = response.hover_pos() {
                     self.nodes[dragged_node] = mouse_pos;
                 }
+            }
+        }
+
+        if response.double_clicked() {
+            if let Some(hovered_node) = self.hovered_node {
+                self.nodes.remove(hovered_node);
+
+                self.edges.retain(|&(from, to)| from != hovered_node && to != hovered_node);
+                for edge in &mut self.edges {
+                    if edge.0 > hovered_node {
+                        edge.0 -= 1;
+                    }
+                    if edge.1 > hovered_node {
+                        edge.1 -= 1;
+                    }
+                }
+
+                self.hovered_node = None;
+                self.dragged_node = None;
+                self.drawing_edge_from = None;
             }
         }
     }
