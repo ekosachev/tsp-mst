@@ -1,16 +1,12 @@
-use std::f32::consts::E;
-
 use eframe::{
     App, Frame,
-    egui::{self, Align2, Color32, FontId, Pos2, Sense},
+    egui::{self, Align2, Color32, FontId, Pos2},
 };
 
 pub struct TspMstApp {
     nodes: Vec<Pos2>,
     hovered_node: Option<usize>,
-    drawing_edge_from: Option<usize>,
     dragged_node: Option<usize>,
-    edges: Vec<(usize, usize)>,
 }
 
 impl App for TspMstApp {
@@ -26,9 +22,7 @@ impl TspMstApp {
         Self {
             nodes: Vec::new(),
             hovered_node: None,
-            drawing_edge_from: None,
             dragged_node: None,
-            edges: Vec::new(),
         }
     }
 
@@ -40,16 +34,12 @@ impl TspMstApp {
 
         self.process_mouse_input(&response);
 
-        self.edges.iter().for_each(|&(from, to)| {
-            let from_pos = self.nodes[from];
-            let to_pos = self.nodes[to];
-            painter.line_segment([from_pos, to_pos], (2.0, Color32::GREEN));
-        });
-
-        if let Some(drawing_from) = self.drawing_edge_from {
-            let from_pos = self.nodes[drawing_from];
-            if let Some(mouse_pos) = response.hover_pos() {
-                painter.line_segment([from_pos, mouse_pos], (2.0, Color32::LIGHT_GREEN));
+        for i in 0..self.nodes.len() {
+            for j in (i + 1)..self.nodes.len() {
+                painter.line_segment(
+                    [self.nodes[i], self.nodes[j]],
+                    (2.0, Color32::DARK_GRAY),
+                );
             }
         }
 
@@ -76,31 +66,8 @@ impl TspMstApp {
         if let Some(click_pos) = response.interact_pointer_pos()
             && response.clicked()
         {
-            let target_node: usize;
             if self.hovered_node.is_none() {
                 self.nodes.push(click_pos);
-                target_node = self.nodes.len() - 1;
-            } else {
-                target_node = self.hovered_node.unwrap();
-            }
-
-            if let Some(drawing_from) = self.drawing_edge_from {
-                self.edges.push((drawing_from, target_node));
-                self.drawing_edge_from = None;
-            }
-        }
-
-        if response.clicked_by(egui::PointerButton::Secondary) {
-            if let Some(hovered_node) = self.hovered_node {
-                if self.drawing_edge_from.is_none() {
-                    self.drawing_edge_from = Some(hovered_node);
-                } else {
-                    self.edges
-                        .push((self.drawing_edge_from.unwrap(), hovered_node));
-                    self.drawing_edge_from = None;
-                }
-            } else {
-                self.drawing_edge_from = None;
             }
         }
 
@@ -126,19 +93,8 @@ impl TspMstApp {
             if let Some(hovered_node) = self.hovered_node {
                 self.nodes.remove(hovered_node);
 
-                self.edges.retain(|&(from, to)| from != hovered_node && to != hovered_node);
-                for edge in &mut self.edges {
-                    if edge.0 > hovered_node {
-                        edge.0 -= 1;
-                    }
-                    if edge.1 > hovered_node {
-                        edge.1 -= 1;
-                    }
-                }
-
                 self.hovered_node = None;
                 self.dragged_node = None;
-                self.drawing_edge_from = None;
             }
         }
     }
