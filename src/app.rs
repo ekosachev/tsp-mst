@@ -2,7 +2,7 @@ use std::{fmt::format, time};
 
 use eframe::{
     App, Frame,
-    egui::{self, Align2, Color32, FontId, Pos2},
+    egui::{self, Align2, Color32, FontId, Pos2, Vec2},
 };
 
 use crate::prim;
@@ -155,6 +155,11 @@ impl TspMstApp {
                     self.nodes[dragged_node] = mouse_pos;
                     self.is_dirty = true;
                 }
+            } else {
+                self.nodes.iter_mut().for_each(|pos| {
+                    *pos += response.drag_delta();
+                });
+                self.is_dirty = true;
             }
         }
 
