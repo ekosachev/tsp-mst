@@ -11,6 +11,8 @@ pub struct TspMstApp {
     dragged_node: Option<usize>,
     is_dirty: bool,
     mst_adjacency_list: Vec<Vec<Pos2>>,
+    depth_first_traversal: Vec<Pos2>,
+    euler_tour: Vec<Pos2>,
 }
 
 impl App for TspMstApp {
@@ -29,6 +31,8 @@ impl TspMstApp {
             dragged_node: None,
             is_dirty: false,
             mst_adjacency_list: Vec::new(),
+            depth_first_traversal: Vec::new(),
+            euler_tour: Vec::new(),
         }
     }
 
@@ -42,19 +46,29 @@ impl TspMstApp {
 
         for i in 0..self.nodes.len() {
             for j in (i + 1)..self.nodes.len() {
-                painter.line_segment([self.nodes[i], self.nodes[j]], (2.0, Color32::DARK_GRAY));
+                painter.line_segment([self.nodes[i], self.nodes[j]], (1.0, Color32::DARK_GRAY));
             }
         }
 
         if self.is_dirty {
             self.is_dirty = false;
             self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
+            self.depth_first_traversal =
+                crate::depth_first_traversal::depth_first_search(self.nodes.clone(), self.mst_adjacency_list.clone());
+            self.euler_tour = crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
         }
         for (i, neighbors) in self.mst_adjacency_list.iter().enumerate() {
             for &neighbor in neighbors {
-                painter.line_segment([self.nodes[i], neighbor], (4.0, Color32::RED));
+                painter.line_segment([self.nodes[i], neighbor], (2.0, Color32::RED));
             }
         }
+
+        painter.line(
+            self.depth_first_traversal.clone(),
+            (3.0, Color32::YELLOW),
+        );
+
+        painter.line(self.euler_tour.clone(), (4.0, Color32::GREEN));
 
         self.nodes.iter().enumerate().for_each(|(i, &pos)| {
             painter.circle_filled(pos, 12.0, Color32::GRAY);

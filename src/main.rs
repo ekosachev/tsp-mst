@@ -1,7 +1,9 @@
 use eframe;
 
 mod app;
+mod euler_tour;
 mod data_structures;
+mod depth_first_traversal;
 mod prim;
 
 use app::TspMstApp;
