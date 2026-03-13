@@ -27,6 +27,7 @@ impl App for TspMstApp {
 
         egui::Window::new("Параметры")
             .anchor(Align2::LEFT_TOP, (10.0, 10.0))
+            .resizable(false)
             .show(ctx, |ui| {
                 self.ui_parameters(ui);
             });
