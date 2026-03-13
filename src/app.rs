@@ -1,4 +1,4 @@
-use std::{time};
+use std::time;
 
 use eframe::{
     App, Frame,
@@ -13,7 +13,7 @@ pub struct TspMstApp {
     dragged_node: Option<usize>,
     is_dirty: bool,
     mst_adjacency_list: Vec<Vec<Pos2>>,
-    mst_edges: Vec<Pos2>,
+    mst_edges: Vec<(Pos2, Pos2)>,
     depth_first_traversal: Vec<Pos2>,
     solution: Vec<Pos2>,
     render_edges: bool,
@@ -71,7 +71,6 @@ impl TspMstApp {
 
         self.process_mouse_input(&response);
 
-
         if self.render_edges {
             for i in 0..self.nodes.len() {
                 for j in (i + 1)..self.nodes.len() {
@@ -79,8 +78,6 @@ impl TspMstApp {
                 }
             }
         }
-
-
 
         if self.is_dirty {
             self.is_dirty = false;
@@ -106,7 +103,6 @@ impl TspMstApp {
                 }
             }
 
-
             start = time::Instant::now();
 
             self.depth_first_traversal = crate::depth_first_traversal::depth_first_search(
@@ -120,7 +116,7 @@ impl TspMstApp {
             self.solution_duration = start.elapsed().as_secs_f32();
         }
 
-        if self.render_mst {
+        if self.render_mst && !self.mst_adjacency_list.is_empty() && !self.nodes.is_empty() {
             for (i, neighbors) in self.mst_adjacency_list.iter().enumerate() {
                 for &neighbor in neighbors {
                     painter.line_segment([self.nodes[i], neighbor], (2.0, Color32::RED));
@@ -128,11 +124,11 @@ impl TspMstApp {
             }
         }
 
-        if self.render_dft {
+        if self.render_dft && !self.depth_first_traversal.is_empty() {
             painter.line(self.depth_first_traversal.clone(), (3.0, Color32::YELLOW));
         }
 
-        if self.render_solution {
+        if self.render_solution && !self.solution.is_empty() {
             painter.line(self.solution.clone(), (4.0, Color32::GREEN));
         }
 
