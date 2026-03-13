@@ -49,7 +49,7 @@ impl TspMstApp {
             mst_adjacency_list: Vec::new(),
             depth_first_traversal: Vec::new(),
             solution: Vec::new(),
-            render_edges: true,
+            render_edges: false,
             render_dft: true,
             render_mst: true,
             render_solution: true,
