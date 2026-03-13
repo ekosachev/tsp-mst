@@ -4,6 +4,8 @@
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{amsfonts}
+\usepackage{amsthm}
 
 % --- Шрифт Times New Roman ---
 \usepackage{fontspec}
@@ -77,6 +79,8 @@
 
 % --- Графика ---
 \usepackage{graphicx}
+\newtheorem{theorem}{Теорема}
+\newtheorem{lemma}{Лемма}
 
 \begin{document}
 \graphicspath{{img/}}
@@ -94,5 +98,8 @@
 \section{Задачи}
 \input{tasks.tex}
 
+\section{Содержательная и математическая постановка задачи}
+
+\input{problem_definition.tex}
 
 \end{document}
