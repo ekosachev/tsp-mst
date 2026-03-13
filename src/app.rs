@@ -88,18 +88,21 @@ impl TspMstApp {
             self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
             self.mst_duration = start.elapsed().as_secs_f32();
 
-            self.mst_edges = self.mst_adjacency_list.iter().flatten().cloned().collect();
+            self.mst_edges.clear();
 
-            let mut seen = Vec::<egui::Pos2>::new();
+            for (u, neighbors) in self.mst_adjacency_list.iter().enumerate() {
+                for neighbor in neighbors {
+                    let node = self.nodes[u];
 
-            self.mst_edges.retain(|&pos| {
-                if seen.contains(&pos) {
-                    false
-                } else {
-                    seen.push(pos);
-                    true
+                    if self.mst_edges.contains(&(node, *neighbor))
+                        || self.mst_edges.contains(&(*neighbor, node))
+                    {
+                        continue;
+                    }
+
+                    self.mst_edges.push((self.nodes[u], *neighbor));
                 }
-            });
+            }
 
 
             start = time::Instant::now();
@@ -198,8 +201,8 @@ impl TspMstApp {
     fn ui_parameters(&mut self, ui: &mut egui::Ui) {
         let mst_weight = self
             .mst_edges
-            .windows(2)
-            .map(|w| w[0].distance(w[1]))
+            .iter()
+            .map(|(u, v)| u.distance(*v))
             .sum::<f32>();
 
         let solution_length = self
