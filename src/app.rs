@@ -13,6 +13,7 @@ pub struct TspMstApp {
     dragged_node: Option<usize>,
     is_dirty: bool,
     mst_adjacency_list: Vec<Vec<Pos2>>,
+    mst_edges: Vec<Pos2>,
     depth_first_traversal: Vec<Pos2>,
     solution: Vec<Pos2>,
     render_edges: bool,
@@ -47,6 +48,7 @@ impl TspMstApp {
             dragged_node: None,
             is_dirty: false,
             mst_adjacency_list: Vec::new(),
+            mst_edges: Vec::new(),
             depth_first_traversal: Vec::new(),
             solution: Vec::new(),
             render_edges: false,
@@ -66,6 +68,8 @@ impl TspMstApp {
         );
 
         self.process_mouse_input(&response);
+
+
         if self.render_edges {
             for i in 0..self.nodes.len() {
                 for j in (i + 1)..self.nodes.len() {
@@ -74,6 +78,8 @@ impl TspMstApp {
             }
         }
 
+
+
         if self.is_dirty {
             self.is_dirty = false;
 
@@ -81,6 +87,21 @@ impl TspMstApp {
 
             self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
             self.mst_duration = start.elapsed().as_secs_f32();
+
+            self.mst_edges = self.mst_adjacency_list.iter().flatten().cloned().collect();
+
+            let mut seen = Vec::<egui::Pos2>::new();
+
+            self.mst_edges.retain(|&pos| {
+                if seen.contains(&pos) {
+                    false
+                } else {
+                    seen.push(pos);
+                    true
+                }
+            });
+
+
             start = time::Instant::now();
 
             self.depth_first_traversal = crate::depth_first_traversal::depth_first_search(
@@ -176,20 +197,10 @@ impl TspMstApp {
 
     fn ui_parameters(&mut self, ui: &mut egui::Ui) {
         let mst_weight = self
-            .mst_adjacency_list
-            .iter()
-            .flatten()
-            .map(|&v| {
-                v.distance(
-                    self.nodes[self
-                        .mst_adjacency_list
-                        .iter()
-                        .position(|neighbors| neighbors.contains(&v))
-                        .unwrap()],
-                )
-            })
-            .sum::<f32>()
-            / 2.0; // Each edge is counted twice
+            .mst_edges
+            .windows(2)
+            .map(|w| w[0].distance(w[1]))
+            .sum::<f32>();
 
         let solution_length = self
             .solution
@@ -230,7 +241,7 @@ impl TspMstApp {
         ui.label(format!("Общее время: {:.2} μs", total_time * 1000000.0));
         if ui.button("Сбросить").clicked() {
             self.nodes.clear();
-            self.mst_adjacency_list.clear();
+            self.mst_edges.clear();
             self.depth_first_traversal.clear();
             self.solution.clear();
             self.is_dirty = false;
