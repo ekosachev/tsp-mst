@@ -1,8 +1,8 @@
-use std::{fmt::format, time};
+use std::{time};
 
 use eframe::{
     App, Frame,
-    egui::{self, Align2, Color32, FontId, Pos2, Vec2},
+    egui::{self, Align2, Color32, FontId, Pos2},
 };
 
 use crate::prim;
