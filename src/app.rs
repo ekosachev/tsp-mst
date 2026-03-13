@@ -13,6 +13,10 @@ pub struct TspMstApp {
     mst_adjacency_list: Vec<Vec<Pos2>>,
     depth_first_traversal: Vec<Pos2>,
     euler_tour: Vec<Pos2>,
+    render_edges: bool,
+    render_mst: bool,
+    render_dft: bool,
+    render_solution: bool,
 }
 
 impl App for TspMstApp {
@@ -21,9 +25,11 @@ impl App for TspMstApp {
             self.ui_content(ui);
         });
 
-        egui::Window::new("Параметры").anchor(Align2::LEFT_TOP, (10.0, 10.0)).show(ctx, |ui| {
-            self.ui_parameters(ui);
-        });
+        egui::Window::new("Параметры")
+            .anchor(Align2::LEFT_TOP, (10.0, 10.0))
+            .show(ctx, |ui| {
+                self.ui_parameters(ui);
+            });
     }
 }
 
@@ -37,6 +43,10 @@ impl TspMstApp {
             mst_adjacency_list: Vec::new(),
             depth_first_traversal: Vec::new(),
             euler_tour: Vec::new(),
+            render_edges: true,
+            render_dft: true,
+            render_mst: true,
+            render_solution: true,
         }
     }
 
@@ -47,32 +57,40 @@ impl TspMstApp {
         );
 
         self.process_mouse_input(&response);
-
-        for i in 0..self.nodes.len() {
-            for j in (i + 1)..self.nodes.len() {
-                painter.line_segment([self.nodes[i], self.nodes[j]], (1.0, Color32::DARK_GRAY));
+        if self.render_edges {
+            for i in 0..self.nodes.len() {
+                for j in (i + 1)..self.nodes.len() {
+                    painter.line_segment([self.nodes[i], self.nodes[j]], (1.0, Color32::DARK_GRAY));
+                }
             }
         }
 
         if self.is_dirty {
             self.is_dirty = false;
             self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
-            self.depth_first_traversal =
-                crate::depth_first_traversal::depth_first_search(self.nodes.clone(), self.mst_adjacency_list.clone());
-            self.euler_tour = crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
+            self.depth_first_traversal = crate::depth_first_traversal::depth_first_search(
+                self.nodes.clone(),
+                self.mst_adjacency_list.clone(),
+            );
+            self.euler_tour =
+                crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
         }
-        for (i, neighbors) in self.mst_adjacency_list.iter().enumerate() {
-            for &neighbor in neighbors {
-                painter.line_segment([self.nodes[i], neighbor], (2.0, Color32::RED));
+
+        if self.render_mst {
+            for (i, neighbors) in self.mst_adjacency_list.iter().enumerate() {
+                for &neighbor in neighbors {
+                    painter.line_segment([self.nodes[i], neighbor], (2.0, Color32::RED));
+                }
             }
         }
 
-        painter.line(
-            self.depth_first_traversal.clone(),
-            (3.0, Color32::YELLOW),
-        );
+        if self.render_dft {
+            painter.line(self.depth_first_traversal.clone(), (3.0, Color32::YELLOW));
+        }
 
-        painter.line(self.euler_tour.clone(), (4.0, Color32::GREEN));
+        if self.render_solution {
+            painter.line(self.euler_tour.clone(), (4.0, Color32::GREEN));
+        }
 
         self.nodes.iter().enumerate().for_each(|(i, &pos)| {
             painter.circle_filled(pos, 12.0, Color32::GRAY);
@@ -134,6 +152,10 @@ impl TspMstApp {
     }
 
     fn ui_parameters(&mut self, ui: &mut egui::Ui) {
-        ui.label("Hello world");
+        ui.label("Видимость:");
+        ui.checkbox(&mut self.render_edges, "Ребра");
+        ui.checkbox(&mut self.render_mst, "Минимальное остовное дерево");
+        ui.checkbox(&mut self.render_dft, "Обход в глубину");
+        ui.checkbox(&mut self.render_solution, "Решение TSP");
     }
 }
