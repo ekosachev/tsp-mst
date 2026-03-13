@@ -1,4 +1,4 @@
-use std::fmt::format;
+use std::{fmt::format, time};
 
 use eframe::{
     App, Frame,
@@ -19,6 +19,9 @@ pub struct TspMstApp {
     render_mst: bool,
     render_dft: bool,
     render_solution: bool,
+    mst_duration: f32,
+    dft_duration: f32,
+    solution_duration: f32,
 }
 
 impl App for TspMstApp {
@@ -50,6 +53,9 @@ impl TspMstApp {
             render_dft: true,
             render_mst: true,
             render_solution: true,
+            mst_duration: 0.0,
+            dft_duration: 0.0,
+            solution_duration: 0.0,
         }
     }
 
@@ -70,13 +76,22 @@ impl TspMstApp {
 
         if self.is_dirty {
             self.is_dirty = false;
+
+            let mut start = time::Instant::now();
+
             self.mst_adjacency_list = prim::prim_algorithm(self.nodes.clone());
+            self.mst_duration = start.elapsed().as_secs_f32();
+            start = time::Instant::now();
+
             self.depth_first_traversal = crate::depth_first_traversal::depth_first_search(
                 self.nodes.clone(),
                 self.mst_adjacency_list.clone(),
             );
-            self.solution =
-                crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
+            self.dft_duration = start.elapsed().as_secs_f32();
+            start = time::Instant::now();
+
+            self.solution = crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
+            self.solution_duration = start.elapsed().as_secs_f32();
         }
 
         if self.render_mst {
@@ -155,19 +170,25 @@ impl TspMstApp {
     }
 
     fn ui_parameters(&mut self, ui: &mut egui::Ui) {
-        let mst_weight = self.mst_adjacency_list
-                .iter()
-                .flatten()
-                .map(|&v| v.distance(
+        let mst_weight = self
+            .mst_adjacency_list
+            .iter()
+            .flatten()
+            .map(|&v| {
+                v.distance(
                     self.nodes[self
                         .mst_adjacency_list
                         .iter()
                         .position(|neighbors| neighbors.contains(&v))
-                        .unwrap()]
-                ))
-                .sum::<f32>() / 2.0; // Each edge is counted twice
+                        .unwrap()],
+                )
+            })
+            .sum::<f32>()
+            / 2.0; // Each edge is counted twice
 
-        let solution_length = self.solution.windows(2)
+        let solution_length = self
+            .solution
+            .windows(2)
             .map(|w| w[0].distance(w[1]))
             .sum::<f32>();
 
@@ -176,16 +197,38 @@ impl TspMstApp {
         ui.checkbox(&mut self.render_mst, "Минимальное остовное дерево");
         ui.checkbox(&mut self.render_dft, "Обход в глубину");
         ui.checkbox(&mut self.render_solution, "Решение TSP");
-        ui.separator();
+        ui.label("Информация о решении:");
         ui.label(format!("Количество вершин: {}", self.nodes.len()));
+        ui.label(format!("Вес MST: {:.2}", mst_weight));
+        ui.label(format!("Длина решения: {:.2}", solution_length));
         ui.label(format!(
-            "Вес MST: {}",
-            mst_weight
+            "Качество решения: {:.2}",
+            solution_length / (2.0 * mst_weight)
+        ));
+
+        let total_time = self.mst_duration + self.dft_duration + self.solution_duration;
+        ui.label(format!(
+            "Время построения MST: {:.2} μs ({:.2}%)",
+            self.mst_duration * 1000000.0,
+            (self.mst_duration / total_time) * 100.0
         ));
         ui.label(format!(
-            "Длина решения: {:.2}",
-            solution_length
+            "Время обхода в глубину: {:.2} μs ({:.2}%)",
+            self.dft_duration * 1000000.0,
+            (self.dft_duration / total_time) * 100.0
         ));
-        ui.label(format!("Качество решения: {}", solution_length / (2.0 * mst_weight)));
+        ui.label(format!(
+            "Время построения решения: {:.2} μs ({:.2}%)",
+            self.solution_duration * 1000000.0,
+            (self.solution_duration / total_time) * 100.0
+        ));
+        ui.label(format!("Общее время: {:.2} μs", total_time * 1000000.0));
+        if ui.button("Сбросить").clicked() {
+            self.nodes.clear();
+            self.mst_adjacency_list.clear();
+            self.depth_first_traversal.clear();
+            self.solution.clear();
+            self.is_dirty = false;
+        }
     }
 }
