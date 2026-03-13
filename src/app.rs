@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use eframe::{
     App, Frame,
     egui::{self, Align2, Color32, FontId, Pos2},
@@ -12,7 +14,7 @@ pub struct TspMstApp {
     is_dirty: bool,
     mst_adjacency_list: Vec<Vec<Pos2>>,
     depth_first_traversal: Vec<Pos2>,
-    euler_tour: Vec<Pos2>,
+    solution: Vec<Pos2>,
     render_edges: bool,
     render_mst: bool,
     render_dft: bool,
@@ -43,7 +45,7 @@ impl TspMstApp {
             is_dirty: false,
             mst_adjacency_list: Vec::new(),
             depth_first_traversal: Vec::new(),
-            euler_tour: Vec::new(),
+            solution: Vec::new(),
             render_edges: true,
             render_dft: true,
             render_mst: true,
@@ -73,7 +75,7 @@ impl TspMstApp {
                 self.nodes.clone(),
                 self.mst_adjacency_list.clone(),
             );
-            self.euler_tour =
+            self.solution =
                 crate::euler_tour::build_euler_tour(self.depth_first_traversal.clone());
         }
 
@@ -90,7 +92,7 @@ impl TspMstApp {
         }
 
         if self.render_solution {
-            painter.line(self.euler_tour.clone(), (4.0, Color32::GREEN));
+            painter.line(self.solution.clone(), (4.0, Color32::GREEN));
         }
 
         self.nodes.iter().enumerate().for_each(|(i, &pos)| {
@@ -153,10 +155,37 @@ impl TspMstApp {
     }
 
     fn ui_parameters(&mut self, ui: &mut egui::Ui) {
+        let mst_weight = self.mst_adjacency_list
+                .iter()
+                .flatten()
+                .map(|&v| v.distance(
+                    self.nodes[self
+                        .mst_adjacency_list
+                        .iter()
+                        .position(|neighbors| neighbors.contains(&v))
+                        .unwrap()]
+                ))
+                .sum::<f32>() / 2.0; // Each edge is counted twice
+
+        let solution_length = self.solution.windows(2)
+            .map(|w| w[0].distance(w[1]))
+            .sum::<f32>();
+
         ui.label("Видимость:");
         ui.checkbox(&mut self.render_edges, "Ребра");
         ui.checkbox(&mut self.render_mst, "Минимальное остовное дерево");
         ui.checkbox(&mut self.render_dft, "Обход в глубину");
         ui.checkbox(&mut self.render_solution, "Решение TSP");
+        ui.separator();
+        ui.label(format!("Количество вершин: {}", self.nodes.len()));
+        ui.label(format!(
+            "Вес MST: {}",
+            mst_weight
+        ));
+        ui.label(format!(
+            "Длина решения: {:.2}",
+            solution_length
+        ));
+        ui.label(format!("Качество решения: {}", solution_length / (2.0 * mst_weight)));
     }
 }
