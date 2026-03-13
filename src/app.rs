@@ -20,6 +20,10 @@ impl App for TspMstApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.ui_content(ui);
         });
+
+        egui::Window::new("Параметры").anchor(Align2::LEFT_TOP, (10.0, 10.0)).show(ctx, |ui| {
+            self.ui_parameters(ui);
+        });
     }
 }
 
@@ -127,5 +131,9 @@ impl TspMstApp {
                 self.is_dirty = true;
             }
         }
+    }
+
+    fn ui_parameters(&mut self, ui: &mut egui::Ui) {
+        ui.label("Hello world");
     }
 }
