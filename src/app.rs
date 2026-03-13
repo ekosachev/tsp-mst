@@ -20,6 +20,7 @@ pub struct TspMstApp {
     render_mst: bool,
     render_dft: bool,
     render_solution: bool,
+    render_edge_weights: bool,
     mst_duration: f32,
     dft_duration: f32,
     solution_duration: f32,
@@ -55,6 +56,7 @@ impl TspMstApp {
             render_dft: true,
             render_mst: true,
             render_solution: true,
+            render_edge_weights: false,
             mst_duration: 0.0,
             dft_duration: 0.0,
             solution_duration: 0.0,
@@ -144,6 +146,49 @@ impl TspMstApp {
                 Color32::WHITE,
             );
         });
+        if self.render_edge_weights {
+            let window_bg_color = ui.ctx().style().visuals.window_fill;
+            let solution_edges = self
+                .solution
+                .windows(2)
+                .map(|w| (w[0], w[1]))
+                .collect::<Vec<_>>();
+            let dft_edges = self
+                .depth_first_traversal
+                .windows(2)
+                .map(|w| (w[0], w[1]))
+                .collect::<Vec<_>>();
+
+            for i in 0..self.nodes.len() {
+                for j in (i + 1)..self.nodes.len() {
+                    if self.nodes[i].distance(self.nodes[j]) < 75.0 {
+                        continue;
+                    }
+
+                    let u = self.nodes[i];
+                    let v = self.nodes[j];
+
+                    if self.render_solution
+                        && (solution_edges.contains(&(u, v)) || solution_edges.contains(&(v, u)))
+                    {
+                        self.render_edge_weight(&painter, u, v, Color32::GREEN, window_bg_color);
+                        continue;
+                    }
+                    if self.render_dft
+                        && (dft_edges.contains(&(u, v)) || dft_edges.contains(&(v, u)))
+                    {
+                        self.render_edge_weight(&painter, u, v, Color32::YELLOW, window_bg_color);
+                        continue;
+                    }
+                    if self.render_mst
+                        && (self.mst_edges.contains(&(u, v)) || self.mst_edges.contains(&(v, u)))
+                    {
+                        self.render_edge_weight(&painter, u, v, Color32::RED, window_bg_color);
+                        continue;
+                    }
+                }
+            }
+        }
     }
 
     fn process_mouse_input(&mut self, response: &egui::Response) {
@@ -216,6 +261,7 @@ impl TspMstApp {
         ui.checkbox(&mut self.render_mst, "Минимальное остовное дерево");
         ui.checkbox(&mut self.render_dft, "Обход в глубину");
         ui.checkbox(&mut self.render_solution, "Решение TSP");
+        ui.checkbox(&mut self.render_edge_weights, "Веса ребер");
         ui.label("Информация о решении:");
         ui.label(format!("Количество вершин: {}", self.nodes.len()));
         ui.label(format!("Вес MST: {:.2}", mst_weight));
@@ -249,5 +295,33 @@ impl TspMstApp {
             self.solution.clear();
             self.is_dirty = false;
         }
+    }
+
+    fn render_edge_weight(
+        &self,
+        painter: &egui::Painter,
+        u: Pos2,
+        v: Pos2,
+        text_color: Color32,
+        window_bg_color: Color32,
+    ) {
+        let midpoint = (u + v.to_vec2()) * 0.5;
+
+        let text_rect = painter.text(
+            midpoint,
+            Align2::CENTER_CENTER,
+            format!("{:.2}", u.distance(v)),
+            FontId::monospace(10.0),
+            text_color,
+        );
+
+        painter.rect_filled(text_rect, 0.0, window_bg_color);
+        painter.text(
+            midpoint,
+            Align2::CENTER_CENTER,
+            format!("{:.2}", u.distance(v)),
+            FontId::monospace(10.0),
+            text_color,
+        );
     }
 }
