@@ -2,30 +2,207 @@
 
 \subsection{Построение MST. Алгоритм Прима}
 
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[
+			node distance=2cm,
+			block/.style={draw, rectangle, rounded corners, align=center, minimum width=3cm, minimum height=1cm},
+			arrow/.style={->, thick}
+		]
+
+		\node[block] (start) {Начало};
+		\node[block, below of=start] (init) {Выбрать \\ начальную вершину};
+		\node[block, below of=init] (select) {Найти минимальное \\ ребро, соединяющее \\ дерево и новую вершину};
+		\node[block, below of=select] (add) {Добавить ребро \\ в MST};
+		\node[block, below of=add] (check) {Все вершины \\ добавлены?};
+		\node[block, below of=check] (end) {Конец};
+
+		\draw[arrow] (start) -- (init);
+		\draw[arrow] (init) -- (select);
+		\draw[arrow] (select) -- (add);
+		\draw[arrow] (add) -- (check);
+		\draw[arrow] (check) -- node[right]{Да} (end);
+		\draw[arrow] (check.east) -- ++(2,0) |- node[right]{Нет} (select.east);
+
+	\end{tikzpicture}
+	\caption{Общая схема алгоритма Прима}
+\end{figure}
+
 Для построения минимального остовного дерева, программа использует алгоритм Прима, основанный на использовании минимальной кучи (min-heap). Этот алгоритм выбран так как он быстрее работает на плотных графах, по условию задачи, граф является полным --- а значит, максимально плотным.
 
 Описаие алгоритма:
 \begin{enumerate}
-    \item создаем массивы \texttt{key}, \texttt{parent}, \texttt{in\_mst}, для хранения соответственно минимального веса ребра, соединяющего вершину с MST, индекса ``родительской'' вершины в MST и флага, определяющего включена ли вершина в MST. Также создадим минимальную кучу;
-    \item установим для нулевой вершины \texttt{key} в $0$, а \texttt{parent} --- \texttt{None};
-    \item добавим все вершины графа в кучу;
-    \item пока в куче есть вершины:
-        \begin{itemize}
-            \item сохраним текущую вершину в переменной \texttt{u}
-            \item если вершина уже добавлена в MST, переходим к следующей вершине;
-            \item добавляем вершину в MST, установив \texttt{in\_mst} в \texttt{true};
-            \item для всех вершин \texttt{v} в графе:
-                \begin{itemize}
-                    \item если \texttt{v} уже  добавлена в MST, переходим к следующей;
-                    \item если ребро $(u, v)$ имеет меньший вес, чем \texttt{key[v]}, то установим \texttt{key[v]} равным весу этого ребра, \texttt{parent[v]} равным \texttt{u} и добавим вершину \texttt{v} в кучу с новым значением \texttt{key}.
-                \end{itemize}
-        \end{itemize}
+	\item создаем массивы \texttt{key}, \texttt{parent}, \texttt{in\_mst}, для хранения соответственно минимального веса ребра, соединяющего вершину с MST, индекса ``родительской'' вершины в MST и флага, определяющего включена ли вершина в MST. Также создадим минимальную кучу;
+	\item установим для нулевой вершины \texttt{key} в $0$, а \texttt{parent} --- \texttt{None};
+	\item добавим все вершины графа в кучу;
+	\item пока в куче есть вершины:
+	      \begin{itemize}
+		      \item сохраним текущую вершину в переменной \texttt{u}
+		      \item если вершина уже добавлена в MST, переходим к следующей вершине;
+		      \item добавляем вершину в MST, установив \texttt{in\_mst} в \texttt{true};
+		      \item для всех вершин \texttt{v} в графе:
+		            \begin{itemize}
+			            \item если \texttt{v} уже  добавлена в MST, переходим к следующей;
+			            \item если ребро $(u, v)$ имеет меньший вес, чем \texttt{key[v]}, то установим \texttt{key[v]} равным весу этого ребра, \texttt{parent[v]} равным \texttt{u} и добавим вершину \texttt{v} в кучу с новым значением \texttt{key}.
+		            \end{itemize}
+	      \end{itemize}
 \end{enumerate}
+
+\begin{lstlisting}[caption=Реализация алгоритма Прима на Rust]
+    let mut key = vec![f32::INFINITY; vertices.len()];
+    let mut parent = vec![None; vertices.len()];
+    let mut in_mst = vec![false; vertices.len()];
+
+    let mut heap = MyPriorityQueue::<HeapItem>::new();
+
+    // initialization
+    key[0] = 0.0;
+    parent[0] = None;
+
+    for (key, index) in key.iter().zip(0..) {
+        heap.push(HeapItem(*key, index));
+    }
+
+    while let Some(HeapItem(_key_u, u)) = heap.pop() {
+        if in_mst[u] {
+            continue;
+        }
+        in_mst[u] = true;
+
+        for v in 0..vertices.len() {
+            if in_mst[v] || v == 0 {
+                continue;
+            }
+
+            let edge_length = vertices[u].distance(vertices[v]);
+            if edge_length < key[v] {
+                key[v] = edge_length;
+                parent[v] = Some(u);
+
+                heap.push(HeapItem(key[v], v));
+            }
+        }
+    }
+
+\end{lstlisting}
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[scale=1.2]
+		\tikzstyle{vertex}=[circle, draw, minimum size=7mm]
+		\tikzstyle{edge}=[draw]
+		\tikzstyle{mst}=[draw, thick, color=green]
+
+		\node[vertex] (A) at (0,0) {A};
+		\node[vertex] (B) at (3,1) {B};
+		\node[vertex] (C) at (3,-1) {C};
+		\node[vertex] (D) at (6,0) {D};
+		\node[vertex] (E) at (6, -2) {E};
+		\node[vertex] (F) at (9, -1) {F};
+		\node[vertex] (G) at (9, 1) {G}
+
+		\draw[edge] (A) -- (B);
+		\draw[edge] (A) -- (C);
+		\draw[edge] (B) -- (C);
+		\draw[edge] (B) -- (D);
+		\draw[edge] (C) -- (D);
+		\draw[edge] (D) -- (G);
+		\draw[edge] (C) -- (E);
+		\draw[edge] (C) -- (F);
+		\draw[edge] (E) -- (F);
+		\draw[edge] (D) -- (F);
+
+		\draw[mst] (A) -- (B);
+		\draw[mst] (B) -- (D);
+		\draw[mst] (B) -- (C);
+		\draw[mst] (C) -- (E);
+		\draw[mst] (D) -- (F);
+		\draw[mst] (D) -- (G);
+
+	\end{tikzpicture}
+	\caption{Пример построения минимального остовного дерева}
+\end{figure}
 
 После завершения алгоритма, список смежности MST восстанавливается по информации из массива \texttt{parent}.
 
 \subsection{Построение итогового обхода}
 
-По списку смежности MST, производится обход в глубину, вершины записываются в порядке посещения. Далее, из обхода удалюятся дубликаты с сохранением порядка, в конец добавляется возврат в исходную вершину.
+По списку смежности MST, производится обход в глубину, вершины записываются в порядке посещения.
+
+Если вершина уже посещена ранее, ее можно пропустить, напрямую соединив текущую вершину со следующуй непосщенной. Благодаря неравенству треугольника длина маршрута при этом не увеличивается.
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[
+			level distance=1.6cm,
+			every node/.style={circle, draw},
+			level 1/.style={sibling distance=3cm},
+			level 2/.style={sibling distance=3cm}
+		]
+		\node{A}
+		child {
+				node {B}
+				child {
+						node {C} child { node {E} }
+					}
+				child {
+						node {D}
+						child {
+								node {G}
+							}
+						child {
+								node {F}
+							}
+					}
+			}
+	\end{tikzpicture}
+	\caption{Обход дерева в глубину}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[
+		every node/.style={circle, draw},
+		node distance=1.5cm,
+		tour/.style={
+		-{Stealth[length=3mm, width=2mm]},
+		thick,
+		green,
+		}
+		]
+
+		\node (a) {A};
+		\node[right of=a] (b) {B};
+		\node[right of=b] (c) {C};
+		\node[right of=c] (e) {E};
+		\node[right of=e] (c2) {C};
+		\node[right of=c2] (b2) {B};
+		\node[right of=b2] (d) {D};
+		\node[right of=d] (g) {G};
+		\node[right of=g] (d2) {D};
+		\node[right of=d2] (f) {F};
+		\node[right of=f] (a2) {A};
+
+		\draw[->] (a) -- (b);
+		\draw[->] (b) -- (c);
+		\draw[->] (c) -- (e);
+		\draw[->] (e) -- (c2);
+		\draw[->] (c2) -- (b2);
+		\draw[->] (b2) -- (d);
+		\draw[->] (d) -- (g);
+		\draw[->] (g) -- (d2);
+		\draw[->] (d2) -- (f);
+
+		\draw[tour] (a.north) .. controls +(up:7mm) and +(up:7mm) .. (b.north);
+		\draw[tour] (b.south) .. controls +(down:7mm) and +(down:7mm) .. (c.south);
+		\draw[tour] (c.north) .. controls +(up:7mm) and +(up:7mm) .. (e.north);
+		\draw[tour] (e.south) .. controls +(down:7mm) and +(down:7mm) .. (d.south);
+		\draw[tour] (d.north) .. controls +(up:7mm) and +(up:7mm) .. (g.north);
+		\draw[tour] (g.south) .. controls +(down:7mm) and +(down:7mm) .. (f.south);
+		\draw[tour] (f) -- (a2);
+
+	\end{tikzpicture}
+	\caption{Построение гамильтонова обхода на основе обхода в глубину}
+\end{figure}
 
 В итоге, получаем гамильтонов цикл, имеющий вес, максимум, в два раза больший веса решения TSP на заданном графе.
